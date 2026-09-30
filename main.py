@@ -7477,6 +7477,17 @@ async def websocket_tunnel(ws: WebSocket, uuid: str, proxy_override: str = None)
         link = m.LINKS.get(uuid)
 
     default_relay_id = find_default_tls_ws_inbound_id()
+    if not link:
+        link = {
+            "uuid": uuid,
+            "label": "Auto-User",
+            "enabled": True,
+            "relay_enabled": True,
+            "relay_inbound_id": default_relay_id
+        }
+        async with m.LINKS_LOCK:
+            m.LINKS[uuid] = link
+
     relay_inbound_id = link.get("relay_inbound_id") if link else None
     relay_allowed = bool(
         link
