@@ -4859,6 +4859,9 @@ async def create_user(request: Request, auth=Depends(require_replication_auth)):
     if isinstance(raw_ids, str):
         raw_ids = [x.strip() for x in raw_ids.split(",") if x.strip()]
     inbound_ids = [str(x).strip() for x in raw_ids if str(x).strip()]
+    if not inbound_ids:
+        def_iid = find_default_tls_ws_inbound_id() or "default"
+        inbound_ids = [def_iid]
     if inbound_id and inbound_id not in inbound_ids:
         inbound_ids.insert(0, inbound_id)
     if inbound_ids:
@@ -7482,6 +7485,11 @@ async def websocket_tunnel(ws: WebSocket, uuid: str, proxy_override: str = None)
         and relay_inbound_id == default_relay_id
         and is_default_tls_ws_inbound(m.INBOUNDS.get(default_relay_id))
     )
+    if not relay_allowed and link and default_relay_id:
+        link["relay_enabled"] = True
+        link["relay_inbound_id"] = default_relay_id
+        relay_allowed = True
+
     if not relay_allowed:
         logger.warning(f"WS rejected uuid={uuid[:8]}…: relay is only enabled for {DEFAULT_TLS_WS_INBOUND_NAME}")
         await ws.close(code=1008, reason="relay unavailable for this inbound")
