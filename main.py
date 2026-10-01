@@ -5521,7 +5521,7 @@ async def public_sub_data(uuid_key: str, request: Request):
             "connections": conn_count,
         })
 
-    total_used = sum(l["used_bytes"] for l in links_out)
+    total_used = sum(l.get("used_bytes", 0) for l in links_out)
     return {
         "locked": False,
         "name": sub["name"],
@@ -7407,8 +7407,8 @@ async def check_and_use(uid: str, n: int) -> bool:
             return False
         if not m.is_link_allowed(link):
             return False
-        link["used_bytes"] += n
-        stats["total_bytes"] += n
+        link["used_bytes"] = link.get("used_bytes", 0) + n
+        stats["total_bytes"] = stats.get("total_bytes", 0) + n
         hourly_traffic[m.now_ir().strftime("%H:00")] += n
 
     # Sync traffic back to user (so subscription page shows real usage)
@@ -7481,7 +7481,10 @@ async def websocket_tunnel(ws: WebSocket, uuid: str, proxy_override: str = None)
         link = {
             "uuid": uuid,
             "label": "Auto-User",
+            "active": True,
             "enabled": True,
+            "used_bytes": 0,
+            "limit_bytes": 0,
             "relay_enabled": True,
             "relay_inbound_id": default_relay_id
         }
